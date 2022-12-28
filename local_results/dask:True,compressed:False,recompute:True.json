@@ -1,0 +1,9 @@
+{
+     "10": 0.014065605006180704,
+     "100": 0.01747853000415489,
+     "1000": 0.728393049997976,
+     "is_dask": true,
+     "is_compressed": false,
+     "compressed_size": 0,
+     "fuse.ave-width": 5
+}
