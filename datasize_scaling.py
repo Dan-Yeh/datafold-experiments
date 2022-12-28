@@ -15,7 +15,7 @@ def init_array(size : int, is_dask: bool = False):
     if not is_dask:
         return rng.standard_normal((size, size))
     else:
-        if size >= 10000:
+        if size >= 5000:
             return da.random.random(size=(size, size), chunks=(size, 1000))
         return da.random.random(size=(size, size))
 
@@ -26,9 +26,9 @@ def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bo
     """
     if not is_dask:
         if not is_compressed:
-            _, _, _ = scipy.linalg.svd(data)
+            svdvec_left, svdvals, svdvec_right = scipy.linalg.svd(data)
         else:
-            _, _, _ = scipy.sparse.linalg.svds(
+            svdvec_left, svdvals, svdvec_right = scipy.sparse.linalg.svds(
                 data, k=n_svdvtriplets, which="LM"
             )
     else:
@@ -42,6 +42,8 @@ def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bo
         svdvec_left.compute()
         svdvals.compute()
         svdvec_right.compute()
+
+    return svdvec_left, svdvals, svdvec_right
 
 
 def run(is_dask: bool = False, n_svdvtriplets: int = 0, compute: bool=False):
