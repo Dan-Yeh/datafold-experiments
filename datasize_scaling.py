@@ -1,10 +1,11 @@
 import dask.array as da
 import scipy
+import scipy.sparse.linalg
 import json
 import numpy as np
 from timeit import default_timer as timer
 
-exponents = (1, 2, 3, 4, 5)
+sizes = (10, 100, 1000, 10000, 30000)
 rng = np.random.default_rng()
 
 def init_array(size : int, is_dask: bool = False):
@@ -13,7 +14,7 @@ def init_array(size : int, is_dask: bool = False):
     else:
         return da.random.random(size=(size, size)).compute()
 
-def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bool = False):
+def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bool = False, is_recompute: bool = False):
     """
     Note that scipy.linalg.svds is not sorted yet
     Also not using random v0 vectir for svds
@@ -22,7 +23,7 @@ def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bo
         if not is_compressed:
             _, _, _ = scipy.linalg.svd(data)
         else:
-            _, _, _ = scipy.linalg.svds(
+            _, _, _ = scipy.sparse.linalg.svds(
                 data, k=n_svdvtriplets, which="LM"
             )
     else:
@@ -30,27 +31,26 @@ def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bo
             svdvec_left, svdvals, svdvec_right = da.linalg.svd(data)
         else:
             svdvec_left, svdvals, svdvec_right = da.linalg.svd_compressed(
-            data, k=n_svdvtriplets
+            data, k=n_svdvtriplets, compute=is_recompute
             ) 
         
-        svdvec_left.compute()
-        svdvals.compute()
-        svdvec_right.compute()
+        svdvec_left.compute(scheduler='processes')
+        svdvals.compute(scheduler='processes')
+        svdvec_right.compute(scheduler='processes')
 
 
-def run(is_dask: bool = False, n_svdvtriplets: int = 0):
+def run(is_dask: bool = False, n_svdvtriplets: int = 0, compute: bool=False):
     is_compressed = False if n_svdvtriplets == 0 else True
 
     print(f"Is Dask -> {is_dask}")
     print(f"Is Compressed -> {is_compressed}")
 
     result = dict()
-    for exp in exponents:
-        size = pow(10, exp)
+    for size in sizes:
         print(f"current matrix size is {size} x {size}")
         array = init_array(size, is_dask)
         start = timer()
-        svd(array, n_svdvtriplets)
+        svd(array, n_svdvtriplets, is_compressed=is_compressed, is_recompute=compute)
         end = timer()
 
         t = end - start
@@ -63,14 +63,12 @@ def run(is_dask: bool = False, n_svdvtriplets: int = 0):
     result["is_compressed"] = is_compressed
     result["compressed_size"] = n_svdvtriplets
 
-    filename = f"dask:{is_dask},compressed:{is_compressed}.json"
+    filename = f"dask:{is_dask},compressed:{is_compressed},recompute:{compute}.json"
     with open(filename, "w") as f:
         print(f"Saving results. \n\n")
         json.dump(result, f, indent=5)
 
 
 if __name__ == '__main__':
-    run()
-    run(True)
-    run(n_svdvtriplets=10)
-    run(True, n_svdvtriplets=10)
+    run(True, n_svdvtriplets=9, compute=True)
+    run(True, n_svdvtriplets=9)
