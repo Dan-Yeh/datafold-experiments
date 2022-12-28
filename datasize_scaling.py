@@ -1,18 +1,23 @@
 import dask.array as da
+import dask
 import scipy
 import scipy.sparse.linalg
 import json
 import numpy as np
 from timeit import default_timer as timer
 
-sizes = (10, 100, 1000, 10000, 30000)
+sizes = (10, 100, 1000)
 rng = np.random.default_rng()
+# improvement negligible
+# dask.config.set({"optimization.fuse.ave-width": 5})
 
 def init_array(size : int, is_dask: bool = False):
     if not is_dask:
         return rng.standard_normal((size, size))
     else:
-        return da.random.random(size=(size, size)).compute()
+        if size >= 10000:
+            return da.random.random(size=(size, size), chunks=(size, 1000))
+        return da.random.random(size=(size, size))
 
 def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bool = False, is_recompute: bool = False):
     """
@@ -34,9 +39,9 @@ def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bo
             data, k=n_svdvtriplets, compute=is_recompute
             ) 
         
-        svdvec_left.compute(scheduler='processes')
-        svdvals.compute(scheduler='processes')
-        svdvec_right.compute(scheduler='processes')
+        svdvec_left.compute()
+        svdvals.compute()
+        svdvec_right.compute()
 
 
 def run(is_dask: bool = False, n_svdvtriplets: int = 0, compute: bool=False):
@@ -50,7 +55,7 @@ def run(is_dask: bool = False, n_svdvtriplets: int = 0, compute: bool=False):
         print(f"current matrix size is {size} x {size}")
         array = init_array(size, is_dask)
         start = timer()
-        svd(array, n_svdvtriplets, is_compressed=is_compressed, is_recompute=compute)
+        svd(array, n_svdvtriplets, is_dask=is_dask, is_compressed=is_compressed, is_recompute=compute)
         end = timer()
 
         t = end - start
@@ -62,6 +67,7 @@ def run(is_dask: bool = False, n_svdvtriplets: int = 0, compute: bool=False):
     result["is_dask"] = is_dask
     result["is_compressed"] = is_compressed
     result["compressed_size"] = n_svdvtriplets
+    result["fuse.ave-width"] = 5
 
     filename = f"dask:{is_dask},compressed:{is_compressed},recompute:{compute}.json"
     with open(filename, "w") as f:
@@ -70,5 +76,6 @@ def run(is_dask: bool = False, n_svdvtriplets: int = 0, compute: bool=False):
 
 
 if __name__ == '__main__':
-    run(True, n_svdvtriplets=9, compute=True)
-    run(True, n_svdvtriplets=9)
+    # run(True, n_svdvtriplets=9)
+    # run(True, n_svdvtriplets=9, compute=True)
+    run(True, compute=True)
