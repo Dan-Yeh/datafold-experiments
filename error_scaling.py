@@ -1,4 +1,5 @@
 import json
+import dask.array as da
 import math
 import numpy as np
 from datasize_scaling import svd, init_array
@@ -18,19 +19,18 @@ def rmse(svd_result, result) -> float:
 
 
 def get_all_svd_result(size : int, k : int) -> dict:
-    #TODO : check svdvals order???
     svdvals_dict = dict()
     #svd
     init_data = init_array(size)
     _, svdvals_dict["svd"], _ = svd(init_data)
     _, svdvals_dict["svd+compressed"], _ = svd(init_data, n_svdvtriplets=k, is_compressed=True)
     #dask
-    init_dask_data = init_array(size, is_dask=True)
+    init_dask_data = da.from_array(init_data, chunks=(-1, 'auto')) 
     _, svdvals, _ = svd(init_dask_data, is_dask=True)
     _, svdvals_compressed, _ = svd(init_dask_data, n_svdvtriplets=k, is_dask=True, is_compressed=True)
 
-    svdvals_dict["dask_svd"] = np.asarray(svdvals)
-    svdvals_dict["dask_svd+compressed"] = np.asarray(svdvals_compressed)
+    svdvals_dict["dask_svd"] = np.array(svdvals)
+    svdvals_dict["dask_svd+compressed"] = np.array(svdvals_compressed)
 
     # sort in place
     # ref - https://stackoverflow.com/a/26984520
@@ -52,8 +52,6 @@ def run():
         for key, svdvals in svdvals_dict.items():
             if key != "svd":
                 result[size][key] = rmse(svdvals_dict["svd"], svdvals)
-            if key.startswith("dask"):
-                print(svdvals)
 
             print(f"finish processing key: {key}\n\n")
 

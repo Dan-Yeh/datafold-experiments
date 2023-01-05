@@ -36,7 +36,7 @@ def svd(data, n_svdvtriplets: int = 10, is_dask: bool = False, is_compressed: bo
             svdvec_left, svdvals, svdvec_right = da.linalg.svd(data)
         else:
             svdvec_left, svdvals, svdvec_right = da.linalg.svd_compressed(
-            data, k=n_svdvtriplets, compute=is_recompute
+            data, k=n_svdvtriplets, compute=is_recompute, n_power_iter=4, n_oversamples=10
             ) 
         
         svdvec_left.compute()

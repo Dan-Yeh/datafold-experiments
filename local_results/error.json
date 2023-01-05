@@ -1,0 +1,23 @@
+{
+     "10": {
+          "svd+compressed": 2.4427533966760064,
+          "dask_svd": 0.0,
+          "dask_svd+compressed": 2.54491705441883e-15
+     },
+     "100": {
+          "svd+compressed": 2.1140966998508617,
+          "dask_svd": 0.0,
+          "dask_svd+compressed": 0.07103344702639465
+     },
+     "1000": {
+          "svd+compressed": 1.0964203228230394,
+          "dask_svd": 0.0,
+          "dask_svd+compressed": 2.1512671962017107
+     },
+     "5000": {
+          "svd+compressed": 0.8021883522620229,
+          "dask_svd": 2.4455105075570172e-14,
+          "dask_svd+compressed": 7.619535849808369
+     },
+     "compressed_size": 9
+}
